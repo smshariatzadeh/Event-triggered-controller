@@ -22,6 +22,8 @@ sys.B= [0;
 sys.C= [1 1 1];
 
 na=size(sys.A);
+nb=size(sys.B);
+nc=size(sys.C);
 
 % designing feedback gain based on Linear-Quadratic Regulator (LQR)  
 Q=eye(3);
@@ -39,26 +41,29 @@ for iter = 1:totalRun
     fprintf('step %d of %d: simulation for sigma %d:\n', iter, totalRun ,sigma);
     
     %initialize variable for each run
-    x=[1 2 3]'; %initial state 
+    x0=[1 2 3]'; %initial state 
+    x=x0;
     t=0.0;
     y=0.0;
     yb=0.0;
     r=0.0; % set point    
-    u=0;
-    uold=0;
+    u=zeros(nb(2),1);
+    uold=zeros(nb(2),1);
     dist=0; % disturbance    
     n=round(t_final/dt);
     t_array = zeros(1,n);
-    u_array = zeros(1,n);
+    u_array = zeros(nb(2),n);
     event_array =  zeros(1,n);  
-    r_array =  zeros(1,n);  
-    y_array =  zeros(1,n);
+    r_array =  zeros(nc(1),n);  
+    y_array =  zeros(nc(1),n);
     x_array =  zeros(na(1),n);  
     x_error_array=  zeros(1,n);
     normX_array=  zeros(1,n);
     snormX_array=  zeros(1,n);
     Xnew=zeros(na(1),1);
+    Xnew=x0;
     Xold=zeros(na(1),1);
+
     for i=1:n
          t = t + dt;       
          if mod(i,100)==0 
@@ -74,7 +79,7 @@ for iter = 1:totalRun
              u=r-K*Xnew;
              
              %save data for plot curve
-             u_array(i)=u;
+             u_array(:, i)=u;
              event_array(i)=1;
              uold = u; %save u for next step
          else
@@ -82,7 +87,7 @@ for iter = 1:totalRun
              u = uold; 
              
              %save data for plot curve
-             u_array(i)=u;
+             u_array(:, i)=u;
              event_array(i)=0;
          end
          

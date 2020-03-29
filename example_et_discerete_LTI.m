@@ -33,7 +33,7 @@ R= [ 0.01 0.01;
 [nb,mb]=size(sys.B);
 [nq,mq] =size (Q) ;
 [nr,mr]=size(R);
-[nf ,mf] =size (F) ;
+%[nf ,mf] =size (F) ;
 if na~=ma %Verify A is square
     error('A must besquare')
 else
@@ -51,13 +51,13 @@ if (na ~= nq) || (na ~= mq)
    error('A and Q must be the same size');
    return
 end
-if ~(mf==1&nf==1)
-    if (nq ~= nf) || (mq ~= mf)
-        %Check that Q and F are the same size
-        error('Q and F must be the same size');
-        return
-    end
-end
+% if ~(mf==1&nf==1)
+%     if (nq ~= nf) || (mq ~= mf)
+%         %Check that Q and F are the same size
+%         error('Q and F must be the same size');
+%         return
+%     end
+% end
 if ~(mr==1&nr==1)
     if (mr ~= nr) || (mb ~= nr)
         error('R must be consistent with B');
@@ -82,12 +82,12 @@ end
 %run simulation for different event trigger rule
 sigma_array=linspace(0,0.8,20); % 0<sigma<1
 [p,totalRun]=size(sigma_array);
-t_final=10;
+Tsimu=10;
 dt=0.5; % sample time 
 
 for iter = 1:totalRun
-    sigma=sigma_array(iter);
-    fprintf('step %d of %d: simulation for sigma %d:\n', iter, totalRun ,sigma);
+    Sigma=sigma_array(iter);
+    fprintf('step %d of %d: simulation for sigma %d:\n', iter, totalRun ,Sigma);
     
     %initialize variable for each run
     x0=[-0.2  0.5]'; %initial state 
@@ -98,11 +98,13 @@ for iter = 1:totalRun
     r=0.0; % set point    
     u=zeros(mb,1);
     uold=zeros(mb,1);
-    dist=0; % disturbance    
-    n=round(t_final/dt);
+    dist=0; % disturbance 
+    lastevent=0; %save the time of the last event
+    n=round(Tsimu/dt);
     t_array = zeros(1,n);
     u_array = zeros(mb,n);
     event_array =  zeros(1,n);  
+    event_time_array = zeros(1,n); %save event time for calculation of sample time
     r_array =  zeros(nc(1),n);  
     y_array =  zeros(nc(1),n);
     x_array =  zeros(na,n);  
@@ -113,6 +115,7 @@ for iter = 1:totalRun
     Xold=zeros(na,1);
     Xnew=x0;
    
+    % start of simulation loop 
     for i=1:n
          t = t + dt;       
          if mod(i,100)==0 
@@ -121,15 +124,17 @@ for iter = 1:totalRun
          
          x_error = Xnew-Xold;  
          x_error_array(i) = abs(norm(x_error));
-         snormX_array(i)= sigma*(norm(Xnew));
+         snormX_array(i)= Sigma*(norm(Xnew));
          normX_array(i)= (norm(Xnew));
-         if (sigma*(norm(Xnew))<= abs(norm(x_error)))
+         if (Sigma*(norm(Xnew))<= abs(norm(x_error)))
              % event occured so generate new u
              u=r-K*Xnew;
              
              %save data for plot curve
              u_array(:, i)=u;
              event_array(i)=1;
+             event_time_array(i)= (i- lastevent)*dt ; %save event time for calculation of sample time
+             lastevent=i;             
              uold = u; %save u for next step
          else
              % event not triggered so use old u
@@ -177,17 +182,25 @@ for iter = 1:totalRun
     
     figure(2)
     clf
-    subplot(2,1,1)
+    subplot(3,1,1)
     stem(t_array,x_error_array,'fill'),hold on
     plot(t_array, snormX_array, '-', 'Marker' ,'.')
     plot(t_array, normX_array , '--', 'Marker' ,'.' ),hold off
     legend('x_error','sigma*normX','normX')
+    xlabel('time(s)');    
     
-    subplot(2,1,2)    
+    subplot(3,1,2)    
     stem(t_array,event_array,'r','fill')
     legend('event')
+    xlabel('time(s)');
     grid on
-
+    
+    subplot(3,1,3)    
+    stem(t_array,event_time_array)
+    legend('sample time')
+    xlabel('time(s)');
+    grid on
+    
     NumberofEvent=sum(event_array);
     R=NumberofEvent/n;
     R_array(iter)=R;

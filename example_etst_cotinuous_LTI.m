@@ -51,11 +51,13 @@ for iter = 1:totalRun
     r=0.0; % set point    
     u=zeros(nb(2),1);
     uold=zeros(nb(2),1);
-    dist=0; % disturbance    
+    dist=0; % disturbance   
+    lastevent=0;  %save the time of the last event
     n=round(Tsimu/dt);
     t_array = zeros(1,n);
     u_array = zeros(nb(2),n);
     event_array =  zeros(1,n);  
+    event_time_array = zeros(1,n); %save event time for calculation of sample time
     r_array =  zeros(nc(1),n);  
     y_array =  zeros(nc(1),n);
     x_array =  zeros(na(1),n);  
@@ -82,6 +84,8 @@ for iter = 1:totalRun
              %save data for plot curve
              u_array(:, i)=u;
              event_array(i)=1;
+             event_time_array(i)= (i- lastevent)*dt ; %save event time for calculation of sample time
+             lastevent=i;
              uold = u; %save u for next step
          else
              % event not triggered so use old u
@@ -128,15 +132,24 @@ for iter = 1:totalRun
     xlabel('time(s)');
     
     figure(2)
-    subplot(2,1,1)
+    subplot(3,1,1)
     plot(t_array,x_error_array,  t_array, normX_array  ),hold on;
     plot (t_array,C0*(ones(size(x_error_array))),'--'),hold off
     legend('x_error' ,'normX', 'error threshold')
+    xlabel('time(s)');
     
-    subplot(2,1,2)    
+    subplot(3,1,2)    
     stem(t_array,event_array)
+    xlabel('time(s)');
     legend('event')
     grid on
+    
+    subplot(3,1,3)    
+    stem(t_array,event_time_array)
+    legend('sample time')
+    xlabel('time(s)');
+    grid on
+    
 
     NumberofEvent=sum(event_array);
     R=NumberofEvent/n;

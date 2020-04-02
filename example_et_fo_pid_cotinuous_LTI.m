@@ -41,9 +41,11 @@ clear
  ti = 1;
  kp = 2.5;
  kd = 0;   % PID action
- 
 
-%run simulation for different event trigger rule
+%% network parameters
+hdelay=3; %network delay
+
+%% run simulation for different event trigger rule
 sigma_array=linspace(0,0.4,10); % 0<sigma<1
 [p,totalRun]=size(sigma_array);
 Tsimu=5;
@@ -107,12 +109,18 @@ for iter = 1:totalRun
              event_array(i)=0;
          end
 
-         
+         %% simulation of the network delay
+         if (i-hdelay)<=0
+            Ydnew = y0;
+         else    
+            Ydnew = y_array(:,i-hdelay);
+         end          
+                 
          %% controller part
          if event_array(i)==1
              % there is an event , so get y and generate new u(PID)
              
-             e = (r-y);
+             e = (r-Ydnew);
              s = s + (ki/ti)*(e) * dt;     % integral summation
              %calculate U 
              u= kp*(e)+ s +kd*(e)/dt; % PID action
@@ -133,7 +141,7 @@ for iter = 1:totalRun
          xdot = sys.A*x + sys.B*u;
          x = x + xdot*dt;
          y = sys.C*x;
-         Ynew=y; %save output in sensor memory and event generator part
+         Ynew=y; %save output in sensor memory and event generator part and controller
          
          %save result
          x_array(:,i) = x;

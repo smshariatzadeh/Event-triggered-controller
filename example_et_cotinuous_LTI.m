@@ -1,12 +1,15 @@
 % example_et_cotinuous_LTI.m
 %
-% event trigger for continuous time linear time-invariant system
+% state feedback event trigger for continuous time linear time-invariant system 
 %
 % simulation is run for different event trigger parameters i.e.: in sigma(event-triggered parameter)  
 %
-% event triggered rule is based on comparing norm X with norm e
+% periodic event triggered rule is based on comparing norm X with norm e
 %
 % sigma : event-triggered parameter in event rule 
+%
+% System Configuration figure:
+% https://github.com/smshariatzadeh/Event-triggered-controller/blob/master/event-trigger-control-without-observer.png
 %         
 % By S.M.Shariatzadeh
 % Date :10 Mars 2020 
@@ -14,11 +17,11 @@
 
 %define linear time-invarient system
 sys.A= [0 1 0;
-    4 5 0;
-    1 0 1 ];
+        4 5 0;
+        1 0 1 ];
 sys.B= [0;
-    1;
-    2];
+        1;
+        2];
 sys.C= [1 1 1];
 
 na=size(sys.A);
@@ -28,13 +31,17 @@ nc=size(sys.C);
 % designing feedback gain based on Linear-Quadratic Regulator (LQR)  
 Q=eye(3);
 R= 50;
-[K,S,e] = lqr(sys.A,sys.B,Q,R)
+[K,S,e] = lqr(sys.A,sys.B,Q,R);
+Nbar = -1*inv(sys.C*(inv(sys.A - sys.B * K))*sys.B); 
+
+%network parameters
+hdelay=3; %network delay
 
 %run simulation for different event trigger rule
 sigma_array=linspace(0,0.4,10); % 0<sigma<1
 [p,totalRun]=size(sigma_array);
 Tsimu=5;
-dt=0.005; %very small sample time that system is linear for it
+dt=0.005; % minimum inter-event time = very small sample time that system is linear for it
 
 for iter = 1:totalRun
     Sigma = sigma_array(iter);
@@ -46,7 +53,7 @@ for iter = 1:totalRun
     t=0.0;
     y=0.0;
     yb=0.0;
-    r=0.0; % set point    
+    r=0.0; % set point for tracking   
     u=zeros(nb(2),1);
     uold=zeros(nb(2),1);
     dist=0; % disturbance
@@ -59,12 +66,12 @@ for iter = 1:totalRun
     r_array =  zeros(nc(1),n);  
     y_array =  zeros(nc(1),n);
     x_array =  zeros(na(1),n);  
-    x_error_array=  zeros(1,n);
-    normX_array=  zeros(1,n);
-    snormX_array=  zeros(1,n);
-    Xnew=zeros(na(1),1);
-    Xnew=x0;
-    Xold=zeros(na(1),1);
+    x_error_array = zeros(1,n);
+    normX_array = zeros(1,n);
+    snormX_array = zeros(1,n);
+    Xnew = zeros(na(1),1);
+    Xnew = x0;
+    Xold = zeros(na(1),1);
 
     % start of simulation loop 
     for i=1:n
@@ -73,19 +80,38 @@ for iter = 1:totalRun
              fprintf('\nRunning... Time: %f',t) 
          end    
          
+         %% event generator part (only recognize event and save event message in event_array for  using in the controller
          x_error = Xnew-Xold;  
          x_error_array(i) = abs(norm(x_error));
-         snormX_array(i)= Sigma*(norm(Xnew));
-         normX_array(i)= (norm(Xnew));
+         snormX_array(i) = Sigma*(norm(Xnew));
+         normX_array(i) = (norm(Xnew));
          if (Sigma*(norm(Xnew))<= abs(norm(x_error)))
+             %save data
+             event_array(i)=1;
+             event_time_array(i)= (i- lastevent)*dt ; %save event time for calculation of sample time
+             lastevent = i;             
+             Xold = Xnew;  %save the new state of plant for use in the next step
+             
+         else
+             % event not triggered
+             event_array(i)=0;
+         end
+         
+         %% simulation of the network delay
+         if (i-hdelay)<=0
+            Xdnew = x0;
+         else    
+            Xdnew = x_array(:,i-hdelay);
+         end    
+         
+         %% simulation of the controller part 
+         % At the moment of event occurrence, this part receives Xdnew and calculates u for plant use
+         if event_array(i)==1
              % event occured so generate new u
-             u=r-K*Xnew;
+             u=Nbar*r-K*Xdnew;
              
              %save data for plot curve
              u_array(:, i)=u;
-             event_array(i)=1;
-             event_time_array(i)= (i- lastevent)*dt ; %save event time for calculation of sample time
-             lastevent=i;             
              uold = u; %save u for next step
          else
              % event not triggered so use old u
@@ -94,19 +120,14 @@ for iter = 1:totalRun
              %save data for plot curve
              u_array(:, i)=u;
              event_array(i)=0;
-         end
+         end         
          
-         %find system responce and new x
+         %% find system response by using u and calculate new x by integration method
          xdot = sys.A*x + sys.B*u;
          x = x + xdot*dt;
          Xnew=x;
          y = sys.C*x;
 
-
-         if event_array(i)==1
-            Xold=Xnew;             
-         end    
-         
          %save result
          x_array(:,i)=Xnew;
          t_array(i)=t;
@@ -138,16 +159,17 @@ for iter = 1:totalRun
     legend('x_error','sigma*normX','normX')
     
     subplot(3,1,2)    
+    stem(t_array,event_time_array)
+    legend('Inter-event sampling times')
+    xlabel('time(s)');
+    grid on
+    
+    subplot(3,1,3)    
     stem(t_array,event_array)
     xlabel('time(s)');    
     legend('event')
     grid on
     
-    subplot(3,1,3)    
-    stem(t_array,event_time_array)
-    legend('sample time')
-    xlabel('time(s)');
-    grid on
         
 
     NumberofEvent=sum(event_array);
@@ -162,13 +184,21 @@ for iter = 1:totalRun
 end
 
 figure(5)
-subplot(2,1,1)
+subplot(3,1,1)
 set(gca,'FontSize',10);
-plot(sigma_array,R_array,'LineWidth',2,'Color','b');
+bar(sigma_array,R_array,'b');
 grid on
 xlabel('Sigma'); ylabel('R'); title('Event Ratio (R) vs Error Criterion (Sigma)');
-subplot(2,1,2)
-plot(sigma_array,error_array,'LineWidth',2,'Color','r');
+
+subplot(3,1,2)
+bar(sigma_array,error_array,'r');
 grid on
 xlabel('Sigma'); ylabel('abs(error)'); title(' Output Error vs Error Criterion (Sigma)');
 print('sigma_vs_R_and_E','-dpng');
+
+subplot(3,1,3)
+bar(sigma_array,R_array*n,'g');
+grid on
+xlabel('Sigma'); ylabel(''); title({'Number of sampled data sent from plant to controller','vs Error Criterion (Sigma)'} );
+print('sigma_vs_R_and_E3','-dpng');
+

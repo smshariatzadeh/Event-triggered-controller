@@ -8,13 +8,16 @@
 %
 % sigma : event-triggered parameter in event rule 
 %
+% System Configuration figure:
+% https://github.com/smshariatzadeh/Event-triggered-controller/blob/master/event-trigger-control-without-observer.png
+%
 % Ref: Event-triggered control for Discrete-Time Systems
 % Alina Eqtami, et al (ACC2010)
 %         
 % By S.M.Shariatzadeh
 % Date :20 Mars 2020 
-
-
+%
+%
 %% define linear time-invarient system
 sys.A= [0.1   1.2  ;
         0.007 1.05 ];
@@ -33,7 +36,7 @@ R= [ 0.01 0.01;
 [nb,mb]=size(sys.B);
 [nq,mq] =size (Q) ;
 [nr,mr]=size(R);
-%[nf ,mf] =size (F) ;
+ 
 if na~=ma %Verify A is square
     error('A must besquare')
 else
@@ -51,13 +54,7 @@ if (na ~= nq) || (na ~= mq)
    error('A and Q must be the same size');
    return
 end
-% if ~(mf==1&nf==1)
-%     if (nq ~= nf) || (mq ~= mf)
-%         %Check that Q and F are the same size
-%         error('Q and F must be the same size');
-%         return
-%     end
-% end
+ 
 if ~(mr==1&nr==1)
     if (mr ~= nr) || (mb ~= nr)
         error('R must be consistent with B');
@@ -65,25 +62,32 @@ if ~(mr==1&nr==1)
     end
 end
 mq = norm(Q,1);
+
 % Check if Q is positive semi-definite and symmetric
 if any(eig(Q) < -eps*mq) || (norm(Q'-Q,1)/mq > eps)
     disp('Warning: Q is not symmetric and positive ... semi-definite');
 end
 mr = norm(R,1);
+
 % Check if R is positive definite and symmetric
 if any(eig(R) <= -eps*mr) || (norm(R'-R,1)/mr > eps)
     disp('Warning: R is not symmetric and positive ... definite');
 end
 
 
-% designing feedback gain based on Linear-Quadratic Regulator (LQR)  
+%% designing feedback gain based on Linear-Quadratic Regulator (LQR)  
 [K,S,e] = dlqr(sys.A,sys.B,Q,R)
+Nbar=1;
+%Nbar = -1*inv(sys.C*(inv(sys.A - sys.B * K))*sys.B); 
 
-%run simulation for different event trigger rule
+%% network parameters
+hdelay=3; %network delay
+
+%% run simulation for different event trigger rule
 sigma_array=linspace(0,0.8,20); % 0<sigma<1
 [p,totalRun]=size(sigma_array);
 Tsimu=10;
-dt=0.5; % sample time 
+dt=0.5; % minimum inter-event time
 
 for iter = 1:totalRun
     Sigma=sigma_array(iter);
@@ -122,6 +126,7 @@ for iter = 1:totalRun
              fprintf('\nRunning... Time: %f',t) 
          end    
          
+         %% event generator part (only recognize event and save event message in event_array for  using in the controller
          x_error = Xnew-Xold;  
          x_error_array(i) = abs(norm(x_error));
          snormX_array(i)= Sigma*(norm(Xnew));
@@ -145,7 +150,33 @@ for iter = 1:totalRun
              event_array(i)=0;
          end
          
-         %find system responce and new x
+         %% simulation of the network delay
+         if (i-hdelay)<=0
+            Xdnew = x0;
+         else    
+            Xdnew = x_array(:,i-hdelay);
+         end          
+         
+         %% simulation of the controller part 
+         % At the moment of event occurrence, this part receives Xdnew and calculates u for plant use
+         
+         if event_array(i)==1
+             % event occured so generate new u
+             u=r*Nbar-K*Xdnew;
+             
+             %save data for plot curve
+             u_array(:, i)=u;
+             uold = u; %save u for next step
+         else
+             % event not triggered so use old u
+             u = uold; 
+             
+             %save data for plot curve
+             u_array(:, i)=u;
+         end         
+         
+         
+         %% find system response and new x 
          xplus1 = sys.A*x + sys.B*u;
          x = xplus1;
          Xnew=x;
@@ -190,17 +221,17 @@ for iter = 1:totalRun
     xlabel('time(s)');    
     
     subplot(3,1,2)    
-    stem(t_array,event_array,'r','fill')
-    legend('event')
+    stem(t_array,event_time_array)
+    legend('Inter-event sampling times')
     xlabel('time(s)');
     grid on
     
     subplot(3,1,3)    
-    stem(t_array,event_time_array)
-    legend('sample time')
+    stem(t_array,event_array,'r','fill')
+    legend('event')
     xlabel('time(s)');
     grid on
-    
+   
     NumberofEvent=sum(event_array);
     R=NumberofEvent/n;
     R_array(iter)=R;
@@ -213,13 +244,22 @@ for iter = 1:totalRun
 end
 
 figure(5)
-subplot(2,1,1)
+subplot(3,1,1)
 set(gca,'FontSize',10);
-plot(sigma_array,R_array,'LineWidth',2,'Color','b');
+bar(sigma_array,R_array,'b');
 grid on
 xlabel('Sigma'); ylabel('R'); title('Event Ratio (R) vs Error Criterion (Sigma)');
-subplot(2,1,2)
-plot(sigma_array,error_array,'LineWidth',2,'Color','r');
+
+subplot(3,1,2)
+bar(sigma_array,error_array,'r');
 grid on
 xlabel('Sigma'); ylabel('abs(error)'); title(' Output Error vs Error Criterion (Sigma)');
 print('sigma_vs_R_and_E','-dpng');
+
+subplot(3,1,3)
+bar(sigma_array,R_array*n,'g');
+grid on
+xlabel('Sigma'); ylabel(''); title({'Number of sampled data sent from plant to controller','vs Error Criterion (Sigma)'} );
+print('sigma_vs_R_and_E3','-dpng');
+
+disp('end of simulation')

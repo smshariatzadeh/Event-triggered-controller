@@ -9,7 +9,7 @@
 % sigma : event-triggered parameter in event rule 
 %
 % System Configuration figure:
-% https://github.com/smshariatzadeh/Event-triggered-controller/master/fig/event-trigger-control-without-observer.png
+% https://github.com/smshariatzadeh/Event-triggered-controller/blob/master/fig/event-trigger-control-without-observer.png
 %         
 % By S.M.Shariatzadeh
 % Date :10 Mars 2020 

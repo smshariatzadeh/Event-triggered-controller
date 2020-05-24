@@ -1,5 +1,6 @@
 %% example_ETMPC_discrete_LTI.m
-% Event triggered MPC 
+%
+% Example of event triggered MPC 
 %
 % This example shows ET-MMPC control techniques over network controlled
 % system for discerte-time linear system 

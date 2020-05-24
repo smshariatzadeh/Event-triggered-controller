@@ -11,7 +11,7 @@
 % C0 : event-triggered parameter in event rule 
 %
 % System Configuration figure:
-% https://github.com/smshariatzadeh/Event-triggered-controller/blob/master/event-trigger-control-without-observer.png
+% https://github.com/smshariatzadeh/Event-triggered-controller/blob/master/fig/event-trigger-control-without-observer.png
 %
 % By S.Majid.Shariatzadeh
 % Date :12 Mars 2020 

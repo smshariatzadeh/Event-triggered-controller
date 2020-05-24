@@ -1,11 +1,11 @@
-%% example_ETMPC_discrete_LTI.m
+ %% example_ETMPC_discrete_LTI.m
 %
 % Example of event triggered MPC 
-%
+%%
 % This example shows ET-MMPC control techniques over network controlled
 % system for discerte-time linear system 
 %
-%% https://github.com/smshariatzadeh/Event-triggered-controller/blob/master/event-trigger-MPC-without-observer.png
+%% https://github.com/smshariatzadeh/Event-triggered-controller/blob/master/fig/event-trigger-MPC-without-observer.png
 %
 % use MPT3
 % 
@@ -33,6 +33,9 @@ Xc_vertex = [2, -2; 2 2; -10 2; -10 -2];
 Uc_vertex = [1; -1];
 Xc = Polyhedron(Xc_vertex);
 Uc = Polyhedron(Uc_vertex);
+
+figure(1);
+Graphics.show_convex(Xc, 'm');
 
 
 %make mpc controller
@@ -144,9 +147,9 @@ propagate = @(x, u, w) mysys.A*x+mysys.B*u + w;
          %% plot mpc trajectory
          titl = sprintf('Running... Time: %f of %f',t , Tsimu);
          clf;
-         show_convex(mpc.Xc, 'm');
-         show_trajectory(x_nominal_seq, 'gs-');
-         show_trajectory(Xnew, 'b*-'), title(titl)
+         Graphics.show_convex(mpc.Xc, 'm');
+         Graphics.show_trajectory(x_nominal_seq, 'gs-');
+         Graphics.show_trajectory(Xnew, 'b*-'), xlabel('x1'),ylabel('x2'), title(titl)
          pause(0.2)
     end
 

@@ -10,7 +10,7 @@
 %
 % 
 % System Configuration figure:
-% https://github.com/smshariatzadeh/Event-triggered-controller/blob/master/event-trigger-control-outputfeedback-PID.png
+% https://github.com/smshariatzadeh/Event-triggered-controller/blob/master/fig/event-trigger-control-outputfeedback-PID.png
 %         
 % By S.M.Shariatzadeh
 % Date :25 Mars 2020 

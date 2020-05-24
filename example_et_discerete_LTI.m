@@ -9,7 +9,7 @@
 % sigma : event-triggered parameter in event rule 
 %
 % System Configuration figure:
-% https://github.com/smshariatzadeh/Event-triggered-controller/blob/master/event-trigger-control-without-observer.png
+% https://github.com/smshariatzadeh/Event-triggered-controller/blob/master/fig/event-trigger-control-without-observer.png
 %
 % Ref: Event-triggered control for Discrete-Time Systems
 % Alina Eqtami, et al (ACC2010)

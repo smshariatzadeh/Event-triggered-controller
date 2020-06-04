@@ -121,7 +121,7 @@ y = mysys.C*x;
              %event triggered
              event_time_array(i)= (i- lastevent)*dt ; %save event time for calculation of ineter event time
              lastevent = i;             
-             fprintf('controller gets event message') 
+             fprintf(' controller gets event message') 
              
              % event occured so generate new u
              % At the moment of event occurrence, this part receives Xdnew and calculates u for plant use
@@ -167,7 +167,7 @@ y = mysys.C*x;
 x_array (:, i+1) = [];
 y_array (:, i+1) = [];
     
-%% simulation result
+%% simulation result 1
 figure(2);
 subplot(3,1,1)
 stairs(t_array,x_array(1,:),'r');
@@ -175,13 +175,14 @@ xlabel('time(s)');ylabel('x1');
 grid on
 hold on
 stairs(t_array,xhat_array(1,:),'g');
+title('xhat1')
 legend('x1','xhat1')
 hold off
 
 subplot(3,1,2)
 stairs(t_array,x_array(2,:),'r');
 hold on
-title('xhat')
+title('xhat2')
 xlabel('time(s)');ylabel('x2');
 grid on
 stairs(t_array,xhat_array(2,:),'g');
@@ -198,7 +199,7 @@ hold off
 
 
 
-%% simulation result
+%% simulation results PART2
 figure(3);
 subplot(3,1,1)
 stairs(t_array,x_array(1,:)- xhat_array(1,:) ,'r');
@@ -214,15 +215,12 @@ xlabel('time(s)');ylabel('estimation error x2');
 subplot(3,1,3)
 stairs(t_array,y_array,'r');
 title('y')
-legend('y','yhat')
 xlabel('time(s)');ylabel('y');
 grid on
 
-
-
     
     
-%% simulation result
+%% simulation results part3
 figure(21);
 %for tracking
 %subplot(3,1,1)
@@ -261,4 +259,6 @@ legend('event')
 xlabel('time(s)');
 grid on
 
-  
+fprintf('\n Event Ratio:') 
+NumberofEvent=sum(event_array);
+R=NumberofEvent/n  

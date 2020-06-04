@@ -10,10 +10,8 @@ classdef ModelPredictiveControl < handle
     
     methods (Access = public)
         
-        function obj = ModelPredictiveControl(sys, Q,R, Xc, Uc, N, varargin)
+        function obj = ModelPredictiveControl(sys, Q, R, Xc, Uc, N, varargin)
             obj.sys = sys;
-%            obj.optcon.Q = Q;
- %           obj.optcon.R = R;            
             obj.Xc = Xc;
             obj.optcon = OptimalControler(sys, Q, R, Xc, Uc, N);
             if numel(varargin)==2 % wanna write in Julia... 
@@ -23,6 +21,11 @@ classdef ModelPredictiveControl < handle
                 obj.w_min = zeros(2, 1)
                 obj.w_max = zeros(2, 1)
             end
+        end
+        
+        function [u, x_seq, u_seq ] = solve(obj, x)
+                 [x_seq, u_seq] = obj.optcon.solve(x);
+                  u = u_seq(:, 1);                   
         end
         
         function [] = simulate(obj, Tsimu, x_init)

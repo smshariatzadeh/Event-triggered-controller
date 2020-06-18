@@ -1,5 +1,5 @@
 classdef ModelPredictiveControl < handle
-    
+% A class for Linear Model Predicti    
     properties (SetAccess = private)
         sys % linear sys
         optcon; % optimal contol solver object

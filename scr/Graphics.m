@@ -1,7 +1,33 @@
 classdef Graphics<handle
-    % This is a plot library (function collection) rather than a class
-    % So, All methods are static.
-    % plot trajectory and show convex set which are projected from n-dim
+% Library class for definition of different output and plot of simulation
+%
+% This is a function collection rather than a class
+% So, All methods are static.
+% plot trajectory and show convex set which are projected from n-dim
+%
+% printSolution =arguments:
+%       iprint:     = 0  Print closed loop data(default)
+%                   = 1  Print closed loop data and errors of the
+%                        optimization method
+%                   = 2  Print closed loop data and errors and warnings of
+%                        the optimization method
+%                   >= 5 Print closed loop data and errors and warnings of
+%                        the optimization method as well as graphical
+%                        output of closed loop state trajectories
+%                   >=10 Print closed loop data and errors and warnings of
+%                        the optimization method with error and warning
+%                        description
+%
+%
+%   printHeader:         Clarifying header for selective output of closed
+%                        loop data, cf. printClosedloopData
+%
+%   printClosedloopData: Selective output of closed loop data
+%
+%   plotTrajectories:    Graphical output of the trajectories, requires
+%                        iprint >= 4
+%
+    
     
     methods (Static)
         function show_convex(P, varargin)
@@ -62,6 +88,169 @@ classdef Graphics<handle
             end
             hold on;
         end
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Definition of output text format
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        function printHeader()
+            fprintf('   k  |      u(k)        x(1)        x(2)       x(3)        x(4)     Time\n');
+            fprintf('-------------------------------------------------------------------------------------------------\n');
+        end
+
+        function printClosedloopData(mpciter, u, x, t_Elapsed , message)
+            if size(x,1)==2 
+            fprintf(' %3d  | %+11.6f %+11.6f %+11.6f                      %+6.3f %10s',  ...
+                     mpciter, u(1,1), x(1), x(2), t_Elapsed, message);
+            elseif size(x,1)==3
+            fprintf(' %3d  | %+11.6f %+11.6f %+11.6f %+11.6f            %+6.3f %10s',  ...
+                     mpciter, u(1,1), x(1), x(2), x(3),  t_Elapsed, message);
+            elseif size(x,1)==4 
+            fprintf(' %3d  | %+11.6f %+11.6f %+11.6f %+11.6f %+11.6f  %+6.3f %10s',  ...
+                     mpciter, u(1,1), x(1), x(2), x(3), x(4), t_Elapsed, message);
+                 
+            end
+        end
+        
+        function plotTrajectories(u, t_intermediate, x_intermediate)
+            
+
+            figure(2);
+            subplot(221)
+            plot(t_intermediate,x_intermediate(1,:),'-ok');
+            title(['x_1 closed loop trajectory']);
+            xlabel('n');
+            ylabel('x_1(n)');
+            grid on;
+            hold on;
+            subplot(222)
+            plot(t_intermediate,x_intermediate(2,:),'-ok');
+            title(['x_2 closed loop trajectory']);
+            xlabel('n');
+            ylabel(' x_2(n)');
+            grid on;
+            hold on;
+            if size(x_intermediate,1)>=3   
+                subplot(223)
+                plot(t_intermediate,x_intermediate(3,:),'-ok');
+                title([' x_3 closed loop trajectory']);
+                xlabel('n');
+                ylabel(' x_3(n)');
+                grid on;
+                hold on;
+            end
+            if size(x_intermediate, 1 )>=4               
+                subplot(224)
+                plot(t_intermediate,x_intermediate(4,:),'-ok');
+                title([' x_4 closed loop trajectory']);
+                xlabel('n');
+                ylabel(' x_4(n)');
+                grid on;
+                hold on;        
+            end
+
+
+        end
+        
+        function plotTrajectoriesXY( x_intermediate, A , B)
+            
+            figure(1)
+            plot(x_intermediate(A,:),x_intermediate(B,:),'or', ...
+                 'MarkerFaceColor','r');
+            axis square;
+            title('x_2/x_4 closed loop trajectory');
+            xlabel('x_2');
+            ylabel('x_4');
+            grid on;
+            hold on;
+            
+        end
+        
+        function printSolution(mpciter, iprint, exitflag, t_Elapsed, u,t,x, message)
+            if (mpciter == 1)
+                Graphics.printHeader();
+            end
+            Graphics.printClosedloopData(mpciter, u(:,mpciter), x(:,mpciter), t_Elapsed, message);
+            switch exitflag
+                case -2
+                if ( iprint >= 1 && iprint < 10 )
+                    fprintf(' Error F\n');
+                elseif ( iprint >= 10 )
+                    fprintf(' Error: No feasible point was found\n')
+                end
+                case -1
+                if ( iprint >= 1 && iprint < 10 )
+                    fprintf(' Error OT\n');
+                elseif ( iprint >= 10 )
+                    fprintf([' Error: The output function terminated the',...
+                             ' algorithm\n'])
+                end
+                case 0
+                if ( iprint == 1 )
+                    fprintf('\n');
+                elseif ( iprint >= 2 && iprint < 10 )
+                    fprintf(' Warning IT\n');
+                elseif ( iprint >= 10 )
+                    fprintf([' Warning: Number of iterations exceeded',...
+                             ' options.MaxIter or number of function',...
+                             ' evaluations exceeded options.FunEvals\n'])
+                end
+                case 1
+                if ( iprint == 1 )
+                    fprintf('\n');
+                elseif ( iprint >= 2 && iprint < 10 )
+                    fprintf(' \n');
+                elseif ( iprint >= 10 )
+                    fprintf([' First-order optimality measure was less',...
+                             ' than options.TolFun, and maximum constraint',...
+                             ' violation was less than options.TolCon\n'])
+                end
+                case 2
+                if ( iprint == 1 )
+                    fprintf('\n');
+                elseif ( iprint >= 2 && iprint < 10 )
+                    fprintf(' Warning TX\n');
+                elseif ( iprint >= 10 )
+                    fprintf(' Warning: Change in x was less than options.TolX\n')
+                end
+                case 3
+                if ( iprint == 1 )
+                    fprintf('\n');
+                elseif ( iprint >= 2 && iprint < 10 )
+                    fprintf(' Warning TJ\n');
+                elseif ( iprint >= 10 )
+                    fprintf([' Warning: Change in the objective function',...
+                             ' value was less than options.TolFun\n'])
+                end
+                case 4
+                if ( iprint == 1 )
+                    fprintf('\n');
+                elseif ( iprint >= 2 && iprint < 10 )
+                    fprintf(' Warning S\n');
+                elseif ( iprint >= 10 )
+                    fprintf([' Warning: Magnitude of the search direction',...
+                             ' was less than 2*options.TolX and constraint',...
+                             ' violation was less than options.TolCon\n'])
+                end
+                case 5
+                if ( iprint == 1 )
+                    fprintf('\n');
+                elseif ( iprint >= 2 && iprint < 10 )
+                    fprintf(' Warning D\n');
+                elseif ( iprint >= 10 )
+                    fprintf([' Warning: Magnitude of directional derivative',...
+                             ' in search direction was less than',...
+                             ' 2*options.TolFun and maximum constraint',...
+                             ' violation was less than options.TolCon\n'])
+                end
+            end
+            if ( iprint >= 5 )
+                Graphics.plotTrajectories( u, t, x)
+            end
+        end
+        
+        
+        
     end
 end
 

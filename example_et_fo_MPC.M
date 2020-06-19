@@ -1,7 +1,7 @@
 %% example_ET_fo_MPC_discrete_LTI.m
 %
 % Example of event triggered of output feedback MPC 
-%%
+%
 % This example shows ET-feedback output MPC control techniques over network controlled
 % system for discerte-time linear system 
 %

@@ -16,4 +16,6 @@ A few examples of Matlab code for discrete and continuous time systems:
 
 4-MPC
 
-5-Robust (Tube) MPC
+5-Nonlinear MPC
+
+6-Robust (Tube) MPC

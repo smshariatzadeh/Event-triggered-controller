@@ -1,7 +1,7 @@
 # Event-triggered-control
 Simple examples for Event-triggered controller for network controlled system(NCS):
 
-Event-triggered scheme has been proposed to reduce the communication load in the network .
+Event-triggered control is developed to reduce the communication load in networked control systems. This means that system output or actuator signals are only transmitted over the network when an event-triggering condition is violated which is designed such that a certain control performance can be guaranteed.
 
 A few examples of Matlab code for discrete and continuous time systems:
 

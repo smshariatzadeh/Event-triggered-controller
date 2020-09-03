@@ -9,12 +9,13 @@ classdef LTIObserver < handle
     properties (SetAccess = private)
         % common notation for linear observer 
         
-        Obsys   % Lti system
-        L;      % Gain
-        Ld;     % observer gain or disturbance estimation
+        Obsys   % LTI system
+        L;      % observer Gain
+        Al;     %
+        Ld;     % observer gain for disturbance estimation
         Xhat;   % 
-        Yhat;   %
-        Dhat ;   % disturbance estimation 
+        Yhat;   % observer output
+        Dhat ;  % estimation of disturbance
         Uold;
         Yold;
     end
@@ -61,13 +62,30 @@ classdef LTIObserver < handle
             obj.L = L;
             obj.Ld = 0.01;  %disturbance estimator gain for siso system
             
+            obj.Al = (sys.A + L*sys.C );
+            
             %initialize Xhat
             obj.Xhat = zeros(na, 1 ); % for generate event in the first time step
             obj.Uold = zeros(mb, 1 ); % for generate event in the first time step
             obj.Yold = zeros(nc, 1 ); % for generate event in the first time step
             
         end
-
+        
+        function []= InitObserver(obj, X0hat )
+            %function for initialize Xhat
+            
+            %check dimension of Xhat and sys
+            na=size(obj.Obsys.A,1) ;
+            if size( X0hat ,1 ) == na
+               %initialize Xhat
+               obj.Xhat = X0hat ; % for generate event in the first time step
+% %             obj.Uold = zeros(mb, 1 ); % for generate event in the first time step
+% %             obj.Yold = zeros(nc, 1 ); % for generate event in the first time step
+            else
+               error('ERROR: Xhat size is not consistante with the system state size')
+            end    
+        end
+        
         function [Xhatkp1]  = EstimateCurrentState(obj, Ykp1 , Uk)
             % Read current output & previous U and calculate current X
             %
@@ -113,8 +131,10 @@ classdef LTIObserver < handle
             end    
              
             % calculation 
-            dh_i=0;
-            xh_ipls =  (obj.Obsys.A*obj.Xhat + obj.Obsys.B*obj.Uk + obj.L*(obj.Yk - obj.Obsys.C*obj.Xhat - dh_i )) ;
+            dh_i = 0;
+            obj.Yold = Yk;
+            obj.Uold = Uk;
+            xh_ipls =  (obj.Obsys.A*obj.Xhat + obj.Obsys.B*obj.Uold + obj.L*(obj.Yold - obj.Obsys.C*obj.Xhat - dh_i )) ;
             Xhatkp1 = xh_ipls;
             %dh_ipls = dh_i + (Ld*(yi - Cd1*xh_i - dh_i));
 
@@ -126,6 +146,44 @@ classdef LTIObserver < handle
             % saved data for new 
              
         end
+        
+        function Z_approx = ApproxmRPIset(obj,  W, n_order, alpha)
+            % compute approximate minimal robust positively invariant set
+            % for observer
+            % which takes the form of Z = alpha*(W + Al*W + Al^2*W + ... Ak^n_ordr*W).
+            % where + denotes Minkowski addition.
+            %
+            %input:
+            %   Al: closed loop system matrix 
+            %   W : system noise (as Polyhedron ) (from obj)
+            %   n : degree of approximate (n >=1)
+            %       choose bigger n for best approximation 
+            %   alpha :a magnifier constant  (alpha>=1)
+            %
+            %output:
+            %  Zapprox: approximation of minimal robust positively invarient set as
+            %           polyhedron
+            %
+            % We could obtain approximate minimal RPI (Z) by computing an infinite geometric series,
+            % which is not practicall to get.
+            % we approximate this by trancating the polynomial.
+            
+            if (n_order <1)
+               error ('degree of approximate must be (n >=1)')
+            end
+            if (alpha<1)
+               error ('magnifier constant must be (alpha>=1)') 
+            end
+            Z_approx = W;
+            
+            for n = 1:n_order
+                Z_approx = Z_approx + obj.Al^n*W;
+            end
+            Z_approx = Z_approx*alpha;
+            % which takes the form of Z = alpha*(W + Al*W + Al^2*W + ... Al^n_ordr*W).
+            % where + denotes Minkowski addition.
+        end
+        
         
     end
 end
